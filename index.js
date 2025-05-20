@@ -1,10 +1,15 @@
+require('dotenv').config();
 const express = require('express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const cors = require('cors');
 const app = express();
 
-// Configuración de swagger-jsdoc
+// Middlewares
+app.use(cors());
+app.use(express.json()); // Para parsear JSON
+
+// Swagger config
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -15,27 +20,29 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: 'http://localhost:3000',
+        url: `http://localhost:${process.env.PORT || 3000}`,
       },
     ],
   },
-  apis: ['./routes/*.js'], // Archivos donde se escriben las anotaciones
+  apis: ['./routes/*.js'],
 };
-
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-
-// Middleware de Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.use(cors());
 // Rutas
 const ejemploRoutes = require('./routes/ejemplo');
 const clientesConSaldoRoutes = require('./routes/clientes_con_saldo');
-
 app.use('/api', ejemploRoutes);
-app.use('/clientes', clientesConSaldoRoutes);
+app.use('/api/clientes', clientesConSaldoRoutes);
+
+// Manejo de errores global
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Error interno del servidor' });
+});
+
 // Iniciar servidor
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en: http://localhost:${PORT}`);
   console.log(`Documentación Swagger en: http://localhost:${PORT}/api-docs`);

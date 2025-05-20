@@ -1,0 +1,9 @@
+#El puerto de la aplicación
+PORT=3000
+
+# Configuración de la base de datos meter datos propios
+DB_USER=
+DB_PASSWORD=
+DB_HOST=localhost 
+DB_PORT=5432  # Usamos posgres asi que no cambiar
+DB_NAME=
