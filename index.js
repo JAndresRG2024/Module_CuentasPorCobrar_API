@@ -1,7 +1,7 @@
 const express = require('express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-
+const cors = require('cors');
 const app = express();
 
 // Configuración de swagger-jsdoc
@@ -27,10 +27,13 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 // Middleware de Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+app.use(cors());
 // Rutas
 const ejemploRoutes = require('./routes/ejemplo');
-app.use('/api', ejemploRoutes);
+const clientesConSaldoRoutes = require('./routes/clientes_con_saldo');
 
+app.use('/api', ejemploRoutes);
+app.use('/clientes', clientesConSaldoRoutes);
 // Iniciar servidor
 const PORT = 3000;
 app.listen(PORT, () => {
