@@ -32,8 +32,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Rutas
 const ejemploRoutes = require('./routes/ejemplo');
 const clientesConSaldoRoutes = require('./routes/clientes_con_saldo');
+const cuentasBancariasRoutes = require('./routes/cuentas_bancarias');
+
+// Rutas de la API
 app.use('/api', ejemploRoutes);
 app.use('/api/clientes', clientesConSaldoRoutes);
+app.use('/api/cuentas', cuentasBancariasRoutes);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {
