@@ -31,6 +31,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Rutas
 const ejemploRoutes = require('./routes/ejemplo');
+const pagosRouter = require('./routes/pagos');
 const clientesConSaldoRoutes = require('./routes/clientes_con_saldo');
 const cuentasBancariasRoutes = require('./routes/cuentas_bancarias');
 
@@ -38,7 +39,7 @@ const cuentasBancariasRoutes = require('./routes/cuentas_bancarias');
 app.use('/api', ejemploRoutes);
 app.use('/api/clientes', clientesConSaldoRoutes);
 app.use('/api/cuentas', cuentasBancariasRoutes);
-
+app.use('/api/pagos', pagosRouter);
 // Manejo de errores global
 app.use((err, req, res, next) => {
   console.error(err.stack);
