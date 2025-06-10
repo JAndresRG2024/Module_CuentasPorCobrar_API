@@ -51,7 +51,7 @@ const pool = require('../db');
  */
 router.get('/', async (req, res) => {
     try {
-        const pagosResult = await pool.query('SELECT * FROM pagos ORDER BY id_pago DESC');
+        const pagosResult = await pool.query('SELECT * FROM pagos_cabecera ORDER BY id_pago DESC');
         const pagos = pagosResult.rows;
 
         // Obtener detalles para todos los pagos
@@ -100,7 +100,7 @@ router.post('/', async (req, res) => {
     const { numero_pago, descripcion, fecha, id_cuenta, id_cliente, pdf_generado } = req.body;
     try {
         const result = await pool.query(
-            `INSERT INTO pagos (numero_pago, descripcion, fecha, id_cuenta, id_cliente, pdf_generado)
+            `INSERT INTO pagos_cabecera (numero_pago, descripcion, fecha, id_cuenta, id_cliente, pdf_generado)
              VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
             [numero_pago, descripcion, fecha, id_cuenta, id_cliente, pdf_generado || false]
         );
@@ -135,7 +135,7 @@ router.post('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
     try {
-        const pagoResult = await pool.query('SELECT * FROM pagos WHERE id_pago = $1', [req.params.id]);
+        const pagoResult = await pool.query('SELECT * FROM pagos_cabecera WHERE id_pago = $1', [req.params.id]);
         if (pagoResult.rows.length === 0) return res.status(404).json({ error: 'Pago no encontrado' });
 
         const pago = pagoResult.rows[0];
@@ -181,7 +181,7 @@ router.put('/:id', async (req, res) => {
     const { numero_pago, descripcion, fecha, id_cuenta, id_cliente, pdf_generado } = req.body;
     try {
         const result = await pool.query(
-            `UPDATE pagos SET
+            `UPDATE pagos_cabecera SET
                 numero_pago = $1,
                 descripcion = $2,
                 fecha = $3,
@@ -219,7 +219,7 @@ router.put('/:id', async (req, res) => {
  */
 router.delete('/:id', async (req, res) => {
     try {
-        const result = await pool.query('DELETE FROM pagos WHERE id_pago = $1 RETURNING *', [req.params.id]);
+        const result = await pool.query('DELETE FROM pagos_cabecera WHERE id_pago = $1 RETURNING *', [req.params.id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Pago no encontrado' });
         res.json({ message: 'Pago eliminado' });
     } catch (err) {
@@ -294,6 +294,10 @@ router.get('/:id/detalles/:id_detalle', async (req, res) => {
  *                 type: integer
  *               monto_pagado:
  *                 type: string
+ *               saldo_anterior:
+ *                 type: string
+ *               saldo_nuevo:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Detalle de pago creado
@@ -306,12 +310,12 @@ router.get('/:id/detalles/:id_detalle', async (req, res) => {
  */
 router.post('/:id/detalles', async (req, res) => {
     const { id } = req.params;
-    const { id_factura, monto_pagado } = req.body;
+    const { id_factura, monto_pagado, saldo_anterior, saldo_nuevo } = req.body;
     try {
         const result = await pool.query(
-            `INSERT INTO pagos_detalle (id_pago, id_factura, monto_pagado)
-             VALUES ($1, $2, $3) RETURNING *`,
-            [id, id_factura, monto_pagado]
+            `INSERT INTO pagos_detalle (id_pago, id_factura, monto_pagado, saldo_anterior, saldo_nuevo)
+             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            [id, id_factura, monto_pagado, saldo_anterior, saldo_nuevo]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -349,6 +353,10 @@ router.post('/:id/detalles', async (req, res) => {
  *                 type: integer
  *               monto_pagado:
  *                 type: string
+ *               saldo_anterior:
+ *                 type: string
+ *               saldo_nuevo:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Detalle de pago actualizado
@@ -361,14 +369,16 @@ router.post('/:id/detalles', async (req, res) => {
  */
 router.put('/:id/detalles/:id_detalle', async (req, res) => {
     const { id, id_detalle } = req.params;
-    const { id_factura, monto_pagado } = req.body;
+    const { id_factura, monto_pagado, saldo_anterior, saldo_nuevo } = req.body;
     try {
         const result = await pool.query(
             `UPDATE pagos_detalle SET
                 id_factura = $1,
                 monto_pagado = $2,
-             WHERE id_pago = $3 AND id_detalle = $4 RETURNING *`,
-            [id_factura, monto_pagado, id, id_detalle]
+                saldo_anterior = $3,
+                saldo_nuevo = $4
+             WHERE id_pago = $5 AND id_detalle = $6 RETURNING *`,
+            [id_factura, monto_pagado, saldo_anterior, saldo_nuevo, id, id_detalle]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Detalle de pago no encontrado' });
         res.json(result.rows[0]);
