@@ -5,7 +5,7 @@ CREATE TABLE cuentas_bancarias (
     descripcion TEXT,
     estado BOOLEAN NOT NULL DEFAULT TRUE  -- TRUE=Activo, FALSE=Inactivo
 );
-CREATE TABLE pagos_cabecera (
+CREATE TABLE pagos (
     id_pago SERIAL PRIMARY KEY,
     numero_pago VARCHAR(20) UNIQUE,  -- PAG-CLI-00001
     descripcion TEXT,
@@ -20,8 +20,6 @@ CREATE TABLE pagos_detalle (
     id_pago INT NOT NULL REFERENCES pagos_cabecera(id_pago),
     id_factura INT NOT NULL,  -- Referencia externa (de facturación)
     monto_pagado NUMERIC(10, 2) NOT NULL,
-    saldo_anterior NUMERIC(10, 2),  -- opcional para reportes
-    saldo_nuevo NUMERIC(10, 2)
 );
 
 CREATE TABLE documentos_pdf (
