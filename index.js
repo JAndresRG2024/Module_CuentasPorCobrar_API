@@ -8,6 +8,7 @@ const app = express();
 // Middlewares
 app.use(cors());
 app.use(express.json()); // Para parsear JSON
+app.use('/pdfs', express.static('pdfs'));
 
 // Swagger config
 const swaggerOptions = {

@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
 /**
  * @swagger
  * tags:
@@ -411,6 +413,92 @@ router.delete('/:id/detalles/:id_detalle', async (req, res) => {
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Detalle de pago no encontrado' });
         res.json({ message: 'Detalle de pago eliminado' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * @swagger
+ * /api/pagos/{id}/generar-pdf:
+ *   post:
+ *     summary: Generar PDF de un pago y marcarlo como generado
+ *     tags: [Pagos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID del pago
+ *     responses:
+ *       200:
+ *         description: PDF generado y pago actualizado
+ *       404:
+ *         description: Pago no encontrado
+ */
+router.post('/:id/generar-pdf', async (req, res) => {
+    const { id } = req.params;
+    try {
+        // 1. Obtener el pago y sus detalles
+        const pagoResult = await pool.query('SELECT * FROM pagos WHERE id_pago = $1', [id]);
+        if (pagoResult.rows.length === 0) return res.status(404).json({ error: 'Pago no encontrado' });
+        const pago = pagoResult.rows[0];
+
+        const detallesResult = await pool.query('SELECT * FROM pagos_detalle WHERE id_pago = $1', [id]);
+        const detalles = detallesResult.rows;
+
+        // 2. Generar el PDF
+        const doc = new PDFDocument();
+        const pdfsDir = path.join(__dirname, '..', 'pdfs');
+        if (!fs.existsSync(pdfsDir)) fs.mkdirSync(pdfsDir);
+
+        const pdfPath = path.join(pdfsDir, `pago_${id}.pdf`);
+        const writeStream = fs.createWriteStream(pdfPath);
+        doc.pipe(writeStream);
+
+        // Título
+        doc.fontSize(18).text('Comprobante de Pago', { align: 'center' });
+        doc.moveDown();
+
+        // Datos del pago
+        doc.fontSize(12).text(`ID Pago: ${pago.id_pago}`);
+        doc.text(`Número: ${pago.numero_pago}`);
+        doc.text(`Descripción: ${pago.descripcion}`);
+        doc.text(`Fecha: ${pago.fecha}`);
+        doc.text(`Cuenta: ${pago.id_cuenta}`);
+        doc.text(`Cliente: ${pago.id_cliente}`);
+        doc.moveDown();
+
+        // Tabla de detalles
+        doc.fontSize(14).text('Detalles:', { underline: true });
+        doc.moveDown(0.5);
+
+        detalles.forEach((det, idx) => {
+            doc.fontSize(12).text(
+                `Detalle #${idx + 1} - Factura: ${det.id_factura} | Monto Pagado: $${det.monto_pagado}`
+            );
+        });
+
+        doc.end();
+
+        // Esperar a que el PDF se escriba
+        writeStream.on('finish', async () => {
+            // 3. Actualizar el pago como generado y guardar la URL del PDF
+            const url_pdf = `/pdfs/pago_${id}.pdf`;
+            await pool.query(
+                `UPDATE pagos SET pdf_generado = true WHERE id_pago = $1`,
+                [id]
+            );
+            // Opcional: guarda la URL en una tabla aparte si lo deseas
+
+            res.json({ message: 'PDF generado', url_pdf });
+        });
+
+        writeStream.on('error', (err) => {
+            res.status(500).json({ error: 'Error al escribir el PDF' });
+        });
+
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
