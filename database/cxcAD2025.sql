@@ -17,13 +17,13 @@ CREATE TABLE pagos (
 
 CREATE TABLE pagos_detalle (
     id_detalle SERIAL PRIMARY KEY,
-    id_pago INT NOT NULL REFERENCES pagos_cabecera(id_pago),
+    id_pago INT NOT NULL REFERENCES pagos(id_pago),
     id_factura INT NOT NULL,  -- Referencia externa (de facturación)
-    monto_pagado NUMERIC(10, 2) NOT NULL,
+    monto_pagado NUMERIC(10, 2) NOT NULL
 );
 
 CREATE TABLE documentos_pdf (
-    id_pago INT PRIMARY KEY REFERENCES pagos_cabecera(id_pago),
+    id_pago INT PRIMARY KEY REFERENCES pagos(id_pago),
     url_pdf TEXT,
     fecha_generacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -69,7 +69,7 @@ DECLARE
     ultimo_num INT;
 BEGIN
     IF NEW.numero_pago IS NULL THEN
-        SELECT COALESCE(MAX(CAST(SUBSTRING(numero_pago, 9, 5) AS INT)), 0) INTO ultimo_num FROM pagos_cabecera;
+        SELECT COALESCE(MAX(CAST(SUBSTRING(numero_pago, 9, 5) AS INT)), 0) INTO ultimo_num FROM pagos;
         nuevo_num := 'PAG-CLI-' || LPAD((ultimo_num + 1)::TEXT, 5, '0');
         NEW.numero_pago := nuevo_num;
     END IF;
@@ -78,6 +78,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trigger_numero_pago
-BEFORE INSERT ON pagos_cabecera
+BEFORE INSERT ON pagos
 FOR EACH ROW
 EXECUTE FUNCTION generar_numero_pago();
