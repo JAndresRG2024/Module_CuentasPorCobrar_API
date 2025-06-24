@@ -4,6 +4,8 @@ const pool = require('../db');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const getStream = require('get-stream');
+const { PassThrough } = require('stream');
 /**
  * @swagger
  * tags:
@@ -438,70 +440,128 @@ router.delete('/:id/detalles/:id_detalle', async (req, res) => {
  *         description: Pago no encontrado
  */
 router.post('/:id/generar-pdf', async (req, res) => {
-    const { id } = req.params;
-    try {
-        // 1. Obtener el pago y sus detalles
-        const pagoResult = await pool.query('SELECT * FROM pagos WHERE id_pago = $1', [id]);
-        if (pagoResult.rows.length === 0) return res.status(404).json({ error: 'Pago no encontrado' });
-        const pago = pagoResult.rows[0];
+  const { id } = req.params;
+  try {
+    const pagoResult = await pool.query('SELECT * FROM pagos WHERE id_pago = $1', [id]);
+    if (pagoResult.rows.length === 0) return res.status(404).json({ error: 'Pago no encontrado' });
 
-        const detallesResult = await pool.query('SELECT * FROM pagos_detalle WHERE id_pago = $1', [id]);
-        const detalles = detallesResult.rows;
+    const pago = pagoResult.rows[0];
+    const detallesResult = await pool.query('SELECT * FROM pagos_detalle WHERE id_pago = $1', [id]);
+    const detalles = detallesResult.rows;
 
-        // 2. Generar el PDF
-        const doc = new PDFDocument();
-        const pdfsDir = path.join(__dirname, '..', 'pdfs');
-        if (!fs.existsSync(pdfsDir)) fs.mkdirSync(pdfsDir);
+    // Establecer headers ANTES de pipe
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=pago_${id}.pdf`);
 
-        const pdfPath = path.join(pdfsDir, `pago_${id}.pdf`);
-        const writeStream = fs.createWriteStream(pdfPath);
-        doc.pipe(writeStream);
+    // Pipe PDFKit directamente a la respuesta
+    const doc = new PDFDocument({ margin: 40 });
+    doc.pipe(res);
 
-        // Título
-        doc.fontSize(18).text('Comprobante de Pago', { align: 'center' });
-        doc.moveDown();
+    // Encabezado
+    doc
+    .fontSize(22)
+    .fillColor('#2c3e50')
+    .text('Comprobante de Pago', { align: 'center', underline: true });
+    doc.moveDown(1.5);
 
-        // Datos del pago
-        doc.fontSize(12).text(`ID Pago: ${pago.id_pago}`);
-        doc.text(`Número: ${pago.numero_pago}`);
-        doc.text(`Descripción: ${pago.descripcion}`);
-        doc.text(`Fecha: ${pago.fecha}`);
-        doc.text(`Cuenta: ${pago.id_cuenta}`);
-        doc.text(`Cliente: ${pago.id_cliente}`);
-        doc.moveDown();
+    // Datos principales del pago
+    doc
+    .fontSize(12)
+    .fillColor('black')
+    .text(`ID Pago: `, { continued: true })
+    .font('Helvetica-Bold').text(`${pago.id_pago}`)
+    .font('Helvetica').text(`Número: `, { continued: true })
+    .font('Helvetica-Bold').text(`${pago.numero_pago}`)
+    .font('Helvetica').text(`Descripción: `, { continued: true })
+    .font('Helvetica-Bold').text(`${pago.descripcion}`)
+    .font('Helvetica').text(`Fecha: `, { continued: true })
+    .font('Helvetica-Bold').text(`${new Date(pago.fecha).toLocaleDateString()}`)
+    .font('Helvetica').text(`Cuenta: `, { continued: true })
+    .font('Helvetica-Bold').text(`${pago.id_cuenta}`)
+    .font('Helvetica').text(`Cliente: `, { continued: true })
+    .font('Helvetica-Bold').text(`${pago.id_cliente}`);
+    doc.moveDown(1);
 
-        // Tabla de detalles
-        doc.fontSize(14).text('Detalles:', { underline: true });
-        doc.moveDown(0.5);
+    // Línea divisoria
+    doc
+    .moveTo(doc.page.margins.left, doc.y)
+    .lineTo(doc.page.width - doc.page.margins.right, doc.y)
+    .strokeColor('#cccccc')
+    .lineWidth(1)
+    .stroke();
+    doc.moveDown(1);
 
-        detalles.forEach((det, idx) => {
-            doc.fontSize(12).text(
-                `Detalle #${idx + 1} - Factura: ${det.id_factura} | Monto Pagado: $${det.monto_pagado}`
-            );
-        });
+    // Título de detalles
+    doc
+    .fontSize(14)
+    .fillColor('#2c3e50')
+    .text('Detalles del Pago', { underline: true });
+    doc.moveDown(0.5);
 
-        doc.end();
+    // Tabla de detalles
+    const tableTop = doc.y + 10;
+    const col1 = doc.page.margins.left;
+    const col2 = col1 + 100;
+    const col3 = col2 + 120;
 
-        // Esperar a que el PDF se escriba
-        writeStream.on('finish', async () => {
-            // 3. Actualizar el pago como generado y guardar la URL del PDF
-            const url_pdf = `/pdfs/pago_${id}.pdf`;
-            await pool.query(
-                `UPDATE pagos SET pdf_generado = true WHERE id_pago = $1`,
-                [id]
-            );
-            // Opcional: guarda la URL en una tabla aparte si lo deseas
+    doc
+    .fontSize(11)
+    .fillColor('black')
+    .text('N°', col1, tableTop, { bold: true })
+    .text('Factura', col2, tableTop)
+    .text('Monto Pagado', col3, tableTop);
 
-            res.json({ message: 'PDF generado', url_pdf });
-        });
+    doc
+    .moveTo(col1, tableTop + 15)
+    .lineTo(col3 + 100, tableTop + 15)
+    .strokeColor('#cccccc')
+    .lineWidth(1)
+    .stroke();
 
-        writeStream.on('error', (err) => {
-            res.status(500).json({ error: 'Error al escribir el PDF' });
-        });
+    let y = tableTop + 20;
+    detalles.forEach((det, idx) => {
+    doc
+        .font('Helvetica')
+        .fontSize(11)
+        .text(idx + 1, col1, y)
+        .text(det.id_factura, col2, y)
+        .text(`$${Number(det.monto_pagado).toFixed(2)}`, col3, y, { width: 100 });
+    y += 18;
+    });
 
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    if (detalles.length === 0) {
+    doc.font('Helvetica-Oblique').fontSize(11).text('Sin detalles de pago.', col1, y);
     }
+
+    doc.moveDown(2);
+
+    // Pie de página
+    doc
+    .fontSize(10)
+    .fillColor('gray')
+    .text('Documento generado automáticamente por el sistema de Cuentas por Cobrar.', {
+        align: 'center',
+        baseline: 'bottom'
+    });
+
+    doc.end();
+
+    // Cuando termine de enviar el PDF, actualiza pdf_generado
+    res.on('finish', async () => {
+      try {
+        await pool.query('UPDATE pagos SET pdf_generado = true WHERE id_pago = $1', [id]);
+      } catch (err) {
+        console.error('Error actualizando pdf_generado:', err);
+      }
+    });
+
+  } catch (err) {
+    console.error('ERROR GENERANDO PDF:', err);
+    // Si los headers ya fueron enviados, no puedes enviar JSON, solo cerrar la respuesta
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Error al generar el PDF' });
+    }
+  }
 });
 
 module.exports = router;
