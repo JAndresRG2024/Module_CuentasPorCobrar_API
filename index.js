@@ -4,10 +4,6 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const cors = require('cors');
 const app = express();
-const pagosRouter = require('./routes/pagos');
-
-// PDF antes del JSON middleware (si la ruta usa streams binarios directamente)
-app.use('/api/pagos', pagosRouter); // ← aquí van las rutas PDF
 // Middlewares
 app.use(cors());
 app.use(express.json()); // Para parsear JSON
@@ -34,16 +30,23 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Rutas
-const ejemploRoutes = require('./routes/ejemplo');
-//const pagosRouter = require('./routes/pagos');
-const clientesConSaldoRoutes = require('./routes/clientes_con_saldo');
+const clientesRoutes = require('./routes/clientes');
+const PagosDetalleRouter = require('./routes/pagos_detalles');
 const cuentasBancariasRoutes = require('./routes/cuentas_bancarias');
+const facturasRoutes = require('./routes/Facturas');
+
+const pagosRouter = require('./routes/pagos');
+
+// PDF antes del JSON middleware (si la ruta usa streams binarios directamente)
+app.use('/api/pagos', pagosRouter); // ← aquí van las rutas PDF
+
 
 // Rutas de la API
-app.use('/api', ejemploRoutes);
-app.use('/api/clientes', clientesConSaldoRoutes);
+app.use('/api/clientes', clientesRoutes);
 app.use('/api/cuentas', cuentasBancariasRoutes);
-//app.use('/api/pagos', pagosRouter);
+app.use('/api/pagos-detalle', PagosDetalleRouter);
+app.use('/api/facturas', facturasRoutes);
+
 // Manejo de errores global
 app.use((err, req, res, next) => {
   console.error(err.stack);

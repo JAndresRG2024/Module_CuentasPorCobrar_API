@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
+const cuentasController = require('../controllers/cuentasBancariasController');
 
 /**
  * @swagger
@@ -36,14 +36,7 @@ const pool = require('../db');
  *                   estado:
  *                     type: boolean
  */
-router.get('/', async (req, res, next) => {
-  try {
-    const result = await pool.query('SELECT * FROM cuentas_bancarias');
-    res.json(result.rows);
-  } catch (err) {
-    next(err);
-  }
-});
+router.get('/', cuentasController.getAll);
 
 /**
  * @swagger
@@ -78,21 +71,7 @@ router.get('/', async (req, res, next) => {
  *             schema:
  *               $ref: '#/components/schemas/CuentaBancaria'
  */
-router.post('/', async (req, res, next) => {
-  try {
-    const { nombre_cuenta, entidad_bancaria, descripcion, estado } = req.body;
-    if (!nombre_cuenta || !entidad_bancaria || typeof estado !== 'boolean') {
-      return res.status(400).json({ error: 'Datos incompletos o inválidos' });
-    }
-    const result = await pool.query(
-      'INSERT INTO cuentas_bancarias (id_cuenta, nombre_cuenta, entidad_bancaria, descripcion, estado) VALUES (NULL, $1, $2, $3, $4) RETURNING *',
-      [nombre_cuenta, entidad_bancaria, descripcion, estado]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    next(err);
-  }
-});
+router.post('/', cuentasController.create);
 
 /**
  * @swagger
@@ -117,18 +96,7 @@ router.post('/', async (req, res, next) => {
  *       404:
  *         description: Cuenta no encontrada
  */
-router.get('/:id', async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query('SELECT * FROM cuentas_bancarias WHERE id_cuenta = $1', [id]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Cuenta no encontrada' });
-    }
-    res.json(result.rows[0]);
-  } catch (err) {
-    next(err);
-  }
-});
+router.get('/:id', cuentasController.getById);
 
 /**
  * @swagger
@@ -164,22 +132,7 @@ router.get('/:id', async (req, res, next) => {
  *       404:
  *         description: Cuenta no encontrada
  */
-router.put('/:id', async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { nombre_cuenta, entidad_bancaria, descripcion, estado } = req.body;
-    const result = await pool.query(
-      'UPDATE cuentas_bancarias SET nombre_cuenta=$1, entidad_bancaria=$2, descripcion=$3, estado=$4 WHERE id_cuenta=$5 RETURNING *',
-      [nombre_cuenta, entidad_bancaria, descripcion, estado, id]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Cuenta no encontrada' });
-    }
-    res.json(result.rows[0]);
-  } catch (err) {
-    next(err);
-  }
-});
+router.put('/:id', cuentasController.update);
 
 /**
  * @swagger
@@ -200,17 +153,6 @@ router.put('/:id', async (req, res, next) => {
  *       404:
  *         description: Cuenta no encontrada
  */
-router.delete('/:id', async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query('DELETE FROM cuentas_bancarias WHERE id_cuenta = $1 RETURNING *', [id]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Cuenta no encontrada' });
-    }
-    res.status(204).send();
-  } catch (err) {
-    next(err);
-  }
-});
+router.delete('/:id', cuentasController.delete);
 
 module.exports = router;
