@@ -33,7 +33,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const clientesRoutes = require('./routes/clientes');
 const PagosDetalleRouter = require('./routes/pagos_detalles');
 const cuentasBancariasRoutes = require('./routes/cuentas_bancarias');
-const facturasRoutes = require('./routes/Facturas');
+const facturasRoutes = require('./routes/facturas');
 
 const pagosRouter = require('./routes/pagos');
 
