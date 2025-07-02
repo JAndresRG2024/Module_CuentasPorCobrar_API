@@ -264,7 +264,7 @@ router.post('/:id/generar-pdf', async (req, res) => {
     .text('Documento generado automáticamente por el sistema de Cuentas por Cobrar.', {
         align: 'center',
         baseline: 'bottom'
-    });
+    });G
 
     doc.end();
 
@@ -286,4 +286,91 @@ router.post('/:id/generar-pdf', async (req, res) => {
   }
 });
 
+router.post('/reporte/general', async (req, res) => {
+  try {
+    const pagosResult = await pool.query('SELECT * FROM pagos ORDER BY id_pago');
+    const pagos = pagosResult.rows;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=reporte_pagos.pdf`);
+
+    const doc = new PDFDocument({ margin: 40 });
+    doc.pipe(res);
+
+    doc
+      .fontSize(22)
+      .fillColor('#2c3e50')
+      .text('Reporte General de Pagos', { align: 'center', underline: true });
+    doc.moveDown(1.5);
+
+    // Encabezados de tabla
+    const tableTop = doc.y + 10;
+    const col1 = doc.page.margins.left;
+    const col2 = col1 + 60;
+    const col3 = col2 + 80;
+    const col4 = col3 + 120;
+    const col5 = col4 + 80;
+    const col6 = col5 + 80;
+
+    doc
+      .fontSize(11)
+      .fillColor('black')
+      .font('Helvetica-Bold')
+      .text('ID', col1, tableTop)
+      .text('Número', col2, tableTop)
+      .text('Descripción', col3, tableTop)
+      .text('Fecha', col4, tableTop)
+      .text('Cuenta', col5, tableTop)
+      .text('Cliente', col6, tableTop);
+
+    doc
+      .moveTo(col1, tableTop + 15)
+      .lineTo(col6 + 80, tableTop + 15)
+      .strokeColor('#cccccc')
+      .lineWidth(1)
+      .stroke();
+
+    let y = tableTop + 20;
+    pagos.forEach((pago) => {
+      // Manejo seguro de fecha y campos nulos
+      let fecha = '';
+      try {
+        fecha = pago.fecha ? new Date(pago.fecha).toLocaleDateString() : '';
+      } catch {
+        fecha = '';
+      }
+      doc
+        .font('Helvetica')
+        .fontSize(10)
+        .text(pago.id_pago !== null && pago.id_pago !== undefined ? pago.id_pago : '', col1, y)
+        .text(pago.numero_pago !== null && pago.numero_pago !== undefined ? pago.numero_pago : '', col2, y)
+        .text(pago.descripcion !== null && pago.descripcion !== undefined ? pago.descripcion : '', col3, y, { width: 110 })
+        .text(fecha, col4, y)
+        .text(pago.id_cuenta !== null && pago.id_cuenta !== undefined ? pago.id_cuenta : '', col5, y)
+        .text(pago.id_cliente !== null && pago.id_cliente !== undefined ? pago.id_cliente : '', col6, y);
+      y += 18;
+      if (y > doc.page.height - 50) {
+        doc.addPage();
+        y = doc.y;
+      }
+    });
+
+    doc.moveDown(2);
+
+    doc
+      .fontSize(10)
+      .fillColor('gray')
+      .text('Documento generado automáticamente por el sistema de Cuentas por Cobrar.', {
+        align: 'center',
+        baseline: 'bottom'
+      });
+
+    doc.end();
+  } catch (err) {
+    console.error('ERROR GENERANDO REPORTE PDF en rutas:', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Error al generar el reporte PDF en rutas pt2' });
+    }
+  }
+});
 module.exports = router;
