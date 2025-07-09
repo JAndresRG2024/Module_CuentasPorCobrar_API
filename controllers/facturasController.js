@@ -1,4 +1,5 @@
 const Factura = require('../models/Factura');
+const { enviarAuditoria } = require('../models/Auditoria');
 
 exports.getFacturasNoPagadasPorCliente = async (req, res, next) => {
   try {
@@ -11,6 +12,16 @@ exports.getFacturasNoPagadasPorCliente = async (req, res, next) => {
       monto_total: f.monto_total,
       iva: f.iva
     }));
+
+    // Auditoría de consulta de facturas no pagadas
+    await enviarAuditoria({
+      accion: "SELECT",
+      tabla: "facturas",
+      id_usuario: req.usuario?.id || null,
+      details: { tipo: "consulta facturas no pagadas", id_cliente: req.params.id_cliente },
+      nombre_rol: req.usuario?.rol || "Sistema",
+    });
+
     res.json(resultado);
   } catch (err) {
     next(err);
