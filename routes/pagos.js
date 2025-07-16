@@ -134,9 +134,12 @@ router.put('/:id', pagosController.update);
  */
 router.delete('/:id', async (req, res) => {
     try {
+        // Elimina los detalles primero
+        await pool.query('DELETE FROM pagos_detalle WHERE id_pago = $1', [req.params.id]);
+        // Luego elimina el pago principal
         const result = await pool.query('DELETE FROM pagos WHERE id_pago = $1 RETURNING *', [req.params.id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Pago no encontrado' });
-        res.json({ message: 'Pago eliminado' });
+        res.json({ message: 'Pago y detalles eliminados' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

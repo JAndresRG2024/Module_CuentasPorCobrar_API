@@ -70,7 +70,10 @@ exports.update = async (req, res, next) => {
 exports.delete = async (req, res, next) => {
   try {
     const detalle = await PagoDetalle.deleteDetalle(req.params.id);
-    if (!detalle) return res.status(404).json({ error: 'Detalle de pago no encontrado' });
+    if (!detalle) {
+      console.log(`No se encontró el detalle con id ${req.params.id}`);
+      return res.status(404).json({ error: 'Detalle de pago no encontrado' });
+    }
     await enviarAuditoria({
       accion: "DELETE",
       tabla: "pagos_detalle",
@@ -80,6 +83,7 @@ exports.delete = async (req, res, next) => {
     });
     res.json({ message: 'Detalle de pago eliminado' });
   } catch (err) {
+    console.error('Error al eliminar detalle de pago:', err);
     next(err);
   }
 };
