@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 /**
  * @swagger
@@ -80,56 +80,79 @@ router.get('/deudores', async (req, res) => {
 
     // 3. Filtrar solo facturas a crédito y no pagadas
     const facturasCreditoPendientes = facturas.filter(f =>
-  f.tipo_pago === 'Credito' && f.estado_factura !== 'Pagado'
-  );
+      f.tipo_pago === 'Credito' && f.estado_factura !== 'Pagado'
+    );
 
     // 4. Obtener pagos realizados (desde la base de datos local)
     const pool = require('../db');
-    const pagosDetalleResult = await pool.query('SELECT id_factura, SUM(monto_pagado) as pagado FROM pagos_detalle GROUP BY id_factura');
+    const pagosDetalleResult = await pool.query('SELECT * FROM pagos_detalle');
     const pagosPorFactura = {};
     pagosDetalleResult.rows.forEach(row => {
-      pagosPorFactura[row.id_factura] = Number(row.pagado);
+      if (!pagosPorFactura[row.id_factura]) pagosPorFactura[row.id_factura] = 0;
+      pagosPorFactura[row.id_factura] += Number(row.monto_pagado);
     });
 
     // 5. Calcular deuda por cliente
     const deudaPorCliente = {};
-   facturasCreditoPendientes.forEach(fact => {
-  const pagado = pagosPorFactura[fact.id_factura] || 0;
-  const pendiente = Number(fact.monto_total) - pagado;
-  if (pendiente > 0) {
-    if (!deudaPorCliente[fact.id_cliente]) deudaPorCliente[fact.id_cliente] = 0;
-    deudaPorCliente[fact.id_cliente] += pendiente;
-  }
-});
+    facturasCreditoPendientes.forEach(fact => {
+      const pagado = pagosPorFactura[fact.id_factura] || 0;
+      const pendiente = Number(fact.monto_total) - pagado;
+      if (pendiente > 0) {
+        if (!deudaPorCliente[fact.id_cliente]) deudaPorCliente[fact.id_cliente] = 0;
+        deudaPorCliente[fact.id_cliente] += pendiente;
+      }
+    });
 
-    // 6. Armar respuesta con datos de cliente y total_deuda
+    // 6. Obtener pagos realizados por cliente
+    const pagosCabeceraResult = await pool.query('SELECT * FROM pagos');
+    const pagosCabecera = pagosCabeceraResult.rows;
+
+    // 7. Armar respuesta con datos de cliente, total_deuda, facturas pendientes y pagos realizados
     const deudores = clientes
-  .filter(c => deudaPorCliente[c.id_cliente])
-  .map(c => {
-    // Obtener facturas pendientes de este cliente con monto pendiente
-    const facturasPendientes = facturasCreditoPendientes
-      .filter(f => f.id_cliente === c.id_cliente)
-      .map(f => {
-        const pagado = pagosPorFactura[f.id_factura] || 0;
-        const pendiente = Number(f.monto_total) - pagado;
-        return pendiente > 0
-          ? {
-              id_factura: f.id_factura,
-              monto_pendiente: pendiente
-            }
-          : null;
-      })
-      .filter(f => f !== null);
+      .filter(c => deudaPorCliente[c.id_cliente])
+      .map(c => {
+        // Obtener facturas pendientes de este cliente con monto pendiente
+        const facturasPendientes = facturasCreditoPendientes
+          .filter(f => f.id_cliente === c.id_cliente)
+          .map(f => {
+            const pagado = pagosPorFactura[f.id_factura] || 0;
+            const pendiente = Number(f.monto_total) - pagado;
+            return pendiente > 0
+              ? {
+                id_factura: f.id_factura,
+                monto_pendiente: pendiente
+              }
+              : null;
+          })
+          .filter(f => f !== null);
 
-    return {
-      id_cliente: c.id_cliente,
-      nombre: c.nombre,
-      apellido: c.apellido,
-      total_deuda: deudaPorCliente[c.id_cliente],
-      facturas_pendientes: facturasPendientes // [{id_factura, monto_pendiente}]
-    };
-  });
-res.json(deudores);
+        // Obtener pagos realizados por este cliente
+        const pagosCliente = pagosCabecera
+          .filter(p => p.id_cliente === c.id_cliente)
+          .map(p => ({
+            id_pago: p.id_pago,
+            fecha: p.fecha,
+            descripcion: p.descripcion,
+            detalles: pagosDetalleResult.rows
+              .filter(d => d.id_pago === p.id_pago)
+              .map(d => ({
+                id_detalle: d.id_detalle,
+                id_factura: d.id_factura,
+                monto_pagado: d.monto_pagado
+              }))
+          }));
+
+        return {
+          id_cliente: c.id_cliente,
+          nombre: c.nombre,
+          apellido: c.apellido,
+          total_deuda: deudaPorCliente[c.id_cliente],
+          facturas_pendientes: facturasPendientes, // [{id_factura, monto_pendiente}]
+          pagos_realizados: pagosCliente // [{id_pago, fecha, descripcion, detalles: [{id_detalle, id_factura, monto_pagado}]}]
+        };
+      });
+
+    res.json(deudores);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

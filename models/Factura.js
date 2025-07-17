@@ -8,7 +8,7 @@ const getFacturasNoPagadasPorCliente = async (id_cliente) => {
   const facturasArray = Array.isArray(facturas) ? facturas : [facturas];
   const idClienteNum = Number(id_cliente);
   // Filtra por id_cliente y estado_factura
-  return facturasArray.filter(f => f.id_cliente === idClienteNum && f.estado_factura !== 'Pagado');
+  return facturasArray.filter(f => f.id_cliente === idClienteNum && f.estado_factura !== 'Pagado' && f.tipo_pago === 'Credito');
 };
 
 module.exports = {
