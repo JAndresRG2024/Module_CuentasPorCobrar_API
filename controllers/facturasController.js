@@ -7,6 +7,7 @@ exports.getFacturasNoPagadasPorCliente = async (req, res, next) => {
     const resultado = noPagadas.map(f => ({
       id_cliente: f.id_cliente,
       id_factura: f.id_factura,
+      numero_factura: f.numero_factura,
       estado_factura: f.estado_factura,
       nombre_cliente: f.nombre_cliente || '',
       monto_total: f.monto_total,
