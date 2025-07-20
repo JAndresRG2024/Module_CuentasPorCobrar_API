@@ -1,6 +1,7 @@
 const pool = require('../db');
 const PDFDocument = require('pdfkit');
 const { enviarAuditoria } = require('./Auditoria');
+const Cliente = require('../models/Cliente');
 
 const getAllPagos = async () => {
   const pagosResult = await pool.query('SELECT * FROM pagos ORDER BY id_pago DESC');
@@ -66,6 +67,8 @@ const generarPDFPago = async (id, res, usuario = {}) => {
   try {
     const pago = await obtenerPagoPorId(id);
     const detalles = await obtenerDetallesPago(id);
+    const cliente = await Cliente.getById(pago.id_cliente);
+    console.log('📄 Generando PDF para pago:', pago.id_pago, 'de cliente:', cliente?.nombre_cliente);
 
     configurarCabecerasPDFIndividual(res, id);
 
@@ -73,7 +76,7 @@ const generarPDFPago = async (id, res, usuario = {}) => {
     doc.pipe(res);
 
     renderizarEncabezadoPago(doc);
-    renderizarDatosPago(doc, pago);
+    renderizarDatosPago(doc, pago, cliente);
     renderizarDetallesPago(doc, detalles);
     renderizarPieDePagina(doc);
 
@@ -114,7 +117,7 @@ const renderizarEncabezadoPago = (doc) => {
     .moveDown(1.5);
 };
 
-const renderizarDatosPago = (doc, pago) => {
+const renderizarDatosPago = (doc, pago, cliente) => {
   const fecha = pago.fecha ? new Date(pago.fecha).toLocaleDateString() : 'N/D';
 
   doc
@@ -125,7 +128,7 @@ const renderizarDatosPago = (doc, pago) => {
     .font('Helvetica').text('Descripción: ', { continued: true }).font('Helvetica-Bold').text(pago.descripcion || '—')
     .font('Helvetica').text('Fecha: ', { continued: true }).font('Helvetica-Bold').text(fecha)
     .font('Helvetica').text('Cuenta: ', { continued: true }).font('Helvetica-Bold').text(pago.id_cuenta || '—')
-    .font('Helvetica').text('Cliente: ', { continued: true }).font('Helvetica-Bold').text(pago.id_cliente || '—');
+    .font('Helvetica').text('Cliente: ', { continued: true }).font('Helvetica-Bold').text(cliente ? `${cliente.nombre_cliente} ${cliente.apellido}` : pago.id_cliente || '—');
 
   doc
     .moveDown(1)
@@ -215,6 +218,7 @@ const auditarPagoIndividual = async (id, usuario) => {
 const generarReportePagosPDF = async (res, usuario = {}) => {
   try {
     const pagos = await obtenerPagos();
+    const clientes = await Cliente.getAll();
 
     configurarCabecerasPDF(res);
 
@@ -222,7 +226,7 @@ const generarReportePagosPDF = async (res, usuario = {}) => {
     doc.pipe(res);
 
     renderizarEncabezado(doc);
-    renderizarTablaPagos(doc, pagos);
+    renderizarTablaPagos(doc, pagos, clientes);
     renderizarPieDePagina(doc);
 
     doc.end();
@@ -254,7 +258,7 @@ const renderizarEncabezado = (doc) => {
     .moveDown(1.5);
 };
 
-const renderizarTablaPagos = (doc, pagos) => {
+const renderizarTablaPagos = (doc, pagos, clientes) => {
   const startY = doc.y + 10;
 
   const columnas = {
@@ -288,6 +292,8 @@ const renderizarTablaPagos = (doc, pagos) => {
   let y = startY + 20;
 
   pagos.forEach((pago) => {
+    const cliente = clientes.find(c => c.id_cliente === pago.id_cliente);
+    console.log('📋 Cliente encontrado para el pago', pago.id_pago, ':', cliente);
     const fecha = pago.fecha
       ? new Date(pago.fecha).toLocaleDateString()
       : '';
@@ -301,7 +307,7 @@ const renderizarTablaPagos = (doc, pagos) => {
       .text(pago.descripcion ?? '', columnas.descripcion, y, { width: 100 })
       .text(fecha, columnas.fecha, y)
       .text(pago.id_cuenta ?? '', columnas.cuenta, y)
-      .text(pago.id_cliente ?? '', columnas.cliente, y);
+      .text(cliente ? `${cliente.nombre} ${cliente.apellido}` : pago.id_cliente || '—', columnas.cliente, y);
 
     y += 18;
 
