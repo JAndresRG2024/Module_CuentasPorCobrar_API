@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
-
+const { enviarAuditoria } = require('../models/Auditoria');
 /**
  * @swagger
  * /api/clientes:
@@ -151,6 +151,13 @@ router.get('/deudores', async (req, res) => {
           pagos_realizados: pagosCliente // [{id_pago, fecha, descripcion, detalles: [{id_detalle, id_factura, monto_pagado}]}]
         };
       });
+      await enviarAuditoria({
+      accion: "SELECT",
+      tabla: "deudores",
+      id_usuario: req.usuario?.id || null,
+      details: { tipo: "consulta general" },
+      nombre_rol: req.usuario?.rol || "Sistema",
+    });
 
     res.json(deudores);
   } catch (err) {
