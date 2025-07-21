@@ -5,11 +5,13 @@ const swaggerUi = require('swagger-ui-express');
 const cors = require('cors');
 const app = express();
 const {autenticarToken} = require('./middlewares/authMiddleware');
+const tokenRoutes = require('./routes/token');
 // Middlewares
 app.use(cors());
 app.use(express.json()); // Para parsear JSON
-app.use(autenticarToken);
 app.use('/pdfs', express.static('pdfs'));
+// Ruta pública para validar token
+app.use('/api', tokenRoutes);
 
 // Swagger config
 const swaggerOptions = {
@@ -40,14 +42,14 @@ const facturasRoutes = require('./routes/facturas');
 const pagosRouter = require('./routes/pagos');
 
 // PDF antes del JSON middleware (si la ruta usa streams binarios directamente)
-app.use('/api/pagos', pagosRouter); // ← aquí van las rutas PDF
+app.use('/api/pagos', autenticarToken, pagosRouter); // ← aquí van las rutas PDF
 
 
 // Rutas de la API
-app.use('/api/clientes', clientesRoutes);
-app.use('/api/cuentas', cuentasBancariasRoutes);
-app.use('/api/pagos-detalle', PagosDetalleRouter);
-app.use('/api/facturas', facturasRoutes);
+app.use('/api/clientes', autenticarToken, clientesRoutes);
+app.use('/api/cuentas', autenticarToken, cuentasBancariasRoutes);
+app.use('/api/pagos-detalle', autenticarToken, PagosDetalleRouter);
+app.use('/api/facturas', autenticarToken, facturasRoutes);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {
