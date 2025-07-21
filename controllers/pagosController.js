@@ -7,9 +7,9 @@ exports.getAll = async (req, res, next) => {
     await enviarAuditoria({
       accion: "SELECT",
       tabla: "pagos",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { tipo: "consulta general" },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json(pagos);
   } catch (err) {
@@ -24,9 +24,9 @@ exports.getById = async (req, res, next) => {
     await enviarAuditoria({
       accion: "SELECT",
       tabla: "pagos",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { tipo: "consulta individual", id_pago: req.params.id },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json(pago);
   } catch (err) {
@@ -40,9 +40,9 @@ exports.create = async (req, res, next) => {
     await enviarAuditoria({
       accion: "INSERT",
       tabla: "pagos",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { nuevo_pago: pago },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.status(201).json(pago);
   } catch (err) {
@@ -57,9 +57,9 @@ exports.update = async (req, res, next) => {
     await enviarAuditoria({
       accion: "UPDATE",
       tabla: "pagos",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { id_pago: req.params.id, cambios: req.body },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json(pago);
   } catch (err) {
@@ -74,9 +74,9 @@ exports.delete = async (req, res, next) => {
     await enviarAuditoria({
       accion: "DELETE",
       tabla: "pagos",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { id_pago: req.params.id },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json({ message: 'Pago eliminado' });
   } catch (err) {

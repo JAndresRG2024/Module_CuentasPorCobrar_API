@@ -4,11 +4,11 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const cors = require('cors');
 const app = express();
-const authMiddleware = require('./middlewares/authMiddleware');
+const {autenticarToken} = require('./middlewares/authMiddleware');
 // Middlewares
 app.use(cors());
 app.use(express.json()); // Para parsear JSON
-app.use(authMiddleware);
+app.use(autenticarToken);
 app.use('/pdfs', express.static('pdfs'));
 
 // Swagger config

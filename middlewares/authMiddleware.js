@@ -1,35 +1,33 @@
-const axios = require('axios');
+const jwt = require('jsonwebtoken');
 
-// Middleware para obtener y validar el usuario desde el token
-const authMiddleware = async (req, res, next) => {
+const SECRET_KEY = process.env.JWT_SECRET || 'mi_clave_ultra_segura';
+
+const extraerToken = (req) => {
   const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    req.usuario = null; // No hay token
-    return next();
-  }
-
-  const token = authHeader.split(' ')[1];
-
-  try {
-    // Este endpoint hay que reemplazar por el enpoint del módulo de seguridad que valida el token
-    const response = await axios.get('https://aplicacion-de-seguridad-v2.onrender.com/api/usuarios/perfil', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    const usuario = response.data.usuario;
-
-    req.usuario = {
-      id: usuario.id_usuario,
-      nombre: usuario.nombre,
-      rol: usuario.nombre_rol
-    };
-  } catch (error) {
-    console.warn('Token inválido o error al obtener usuario:', error.message);
-    req.usuario = null;
-  }
-
-  next();
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+  return authHeader.split(' ')[1];
 };
 
-module.exports = authMiddleware;
+const autenticarToken = (req, res, next) => {
+  const token = extraerToken(req);
+  if (!token) return res.status(401).json({ mensaje: 'Token no proporcionado' });
+
+  try {
+    const decoded = jwt.verify(token, SECRET_KEY);
+    req.usuario = decoded; // El token ya contiene: id_usuario, usuario, nombre, nombre_rol
+
+    // ✅ Mostrar datos del token para depuración
+    console.log('🔐 Token recibido y decodificado correctamente:');
+    console.log('🧑 Usuario:', decoded.usuario);
+    console.log('🎭 Rol:', decoded.nombre_rol);
+    console.log('🪪 ID Usuario:', decoded.id_usuario);
+    
+    next();
+  } catch (err) {
+    return res.status(401).json({ mensaje: 'Token inválido o expirado' });
+  }
+};
+
+module.exports = {
+  autenticarToken,
+};

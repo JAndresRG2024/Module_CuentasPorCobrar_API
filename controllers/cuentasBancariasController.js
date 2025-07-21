@@ -8,9 +8,9 @@ exports.getAll = async (req, res, next) => {
     await enviarAuditoria({
       accion: "SELECT",
       tabla: "cuentas_bancarias",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { tipo: "consulta general" },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json(cuentas);
   } catch (err) {
@@ -26,9 +26,9 @@ exports.getById = async (req, res, next) => {
     await enviarAuditoria({
       accion: "SELECT",
       tabla: "cuentas_bancarias",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { tipo: "consulta individual", id_cuenta: req.params.id },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json(cuenta);
   } catch (err) {
@@ -43,9 +43,9 @@ exports.create = async (req, res, next) => {
     await enviarAuditoria({
       accion: "INSERT",
       tabla: "cuentas_bancarias",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { nueva_cuenta: cuenta },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.status(201).json(cuenta);
   } catch (err) {
@@ -61,9 +61,9 @@ exports.update = async (req, res, next) => {
     await enviarAuditoria({
       accion: "UPDATE",
       tabla: "cuentas_bancarias",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { id_cuenta: req.params.id, cambios: req.body },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json(cuenta);
   } catch (err) {
@@ -79,9 +79,9 @@ exports.delete = async (req, res, next) => {
     await enviarAuditoria({
       accion: "DELETE",
       tabla: "cuentas_bancarias",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { id_cuenta: req.params.id },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.status(204).send();
   } catch (err) {

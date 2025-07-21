@@ -7,9 +7,9 @@ exports.getAll = async (req, res, next) => {
     await enviarAuditoria({
       accion: "SELECT",
       tabla: "pagos_detalle",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { tipo: "consulta general" },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json(detalles);
   } catch (err) {
@@ -24,9 +24,9 @@ exports.getById = async (req, res, next) => {
     await enviarAuditoria({
       accion: "SELECT",
       tabla: "pagos_detalle",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { tipo: "consulta individual", id_detalle: req.params.id },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json(detalle);
   } catch (err) {
@@ -40,9 +40,9 @@ exports.create = async (req, res, next) => {
     await enviarAuditoria({
       accion: "INSERT",
       tabla: "pagos_detalle",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { nuevo_detalle: detalle },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.status(201).json(detalle);
   } catch (err) {
@@ -57,9 +57,9 @@ exports.update = async (req, res, next) => {
     await enviarAuditoria({
       accion: "UPDATE",
       tabla: "pagos_detalle",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { id_detalle: req.params.id, cambios: req.body },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json(detalle);
   } catch (err) {
@@ -77,9 +77,9 @@ exports.delete = async (req, res, next) => {
     await enviarAuditoria({
       accion: "DELETE",
       tabla: "pagos_detalle",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { id_detalle: req.params.id },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json({ message: 'Detalle de pago eliminado' });
   } catch (err) {

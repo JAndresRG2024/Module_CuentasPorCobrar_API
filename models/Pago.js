@@ -206,9 +206,9 @@ const auditarPagoIndividual = async (id, usuario) => {
     await enviarAuditoria({
       accion: 'DOWNLOAD_PDF',
       tabla: 'pagos',
-      id_usuario: usuario.id || null,
+      id_usuario: usuario.id_usuario || null,
       details: { id_pago: id, tipo: 'descarga PDF individual' },
-      nombre_rol: usuario.rol || 'Sistema',
+      nombre_rol: usuario.nombre_rol || 'Sistema',
     });
   } catch (err) {
     console.error('Error actualizando pdf_generado o auditando:', err);
@@ -334,9 +334,9 @@ const auditarDescarga = async (usuario) => {
     await enviarAuditoria({
       accion: 'DOWNLOAD_PDF',
       tabla: 'pagos',
-      id_usuario: usuario.id || null,
+      id_usuario: usuario.id_usuario || null,
       details: { tipo: 'descarga reporte general de pagos' },
-      nombre_rol: usuario.rol || 'Sistema',
+      nombre_rol: usuario.nombre_rol || 'Sistema',
     });
   } catch (err) {
     console.error('Error auditando descarga de reporte:', err);

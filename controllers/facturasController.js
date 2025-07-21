@@ -18,9 +18,9 @@ exports.getFacturasNoPagadasPorCliente = async (req, res, next) => {
     await enviarAuditoria({
       accion: "SELECT",
       tabla: "facturas",
-      id_usuario: req.usuario?.id || null,
+      id_usuario: req.usuario?.id_usuario || null,
       details: { tipo: "consulta facturas no pagadas", id_cliente: req.params.id_cliente },
-      nombre_rol: req.usuario?.rol || "Sistema",
+      nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
 
     res.json(resultado);
