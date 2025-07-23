@@ -153,9 +153,15 @@ router.get('/deudores', async (req, res) => {
       });
       await enviarAuditoria({
       accion: "SELECT",
+      modulo: "cuentas por cobrar",
       tabla: "deudores",
       id_usuario: req.usuario?.id_usuario || null,
-      details: { tipo: "consulta general" },
+      details: { 
+        tipo: "consulta general",
+        consulta: 'SELECT * FROM clientes WHERE id_cliente IN (SELECT id_cliente FROM facturas WHERE tipo_pago = \'Credito\' AND estado_factura != \'Pagado\')',
+        token: req.headers.authorization ? req.headers.authorization.split(' ')[1] : 'Sin token',
+        usuario_autenticado: req.usuario?.usuario || 'Sin usuario autenticado'
+      },
       nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
 
