@@ -152,6 +152,10 @@ router.get('/deudores', autenticarToken, async (req, res) => {
           pagos_realizados: pagosCliente // [{id_pago, fecha, descripcion, detalles: [{id_detalle, id_factura, monto_pagado}]}]
         };
       });
+      console.log('🔍 Probando si funciona autenticarToken:');
+    // Enviar auditoría de consulta
+      console.log('🔐 Enviando auditoría de consulta de deudores...');
+      console.log('🧑 Usuario autenticado:', req.usuario?.usuario || 'Sin usuario autenticado');
       await enviarAuditoria({
       accion: "SELECT",
       modulo: "cuentas por cobrar",
