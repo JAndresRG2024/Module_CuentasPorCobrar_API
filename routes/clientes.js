@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const { enviarAuditoria } = require('../models/Auditoria');
-const {autenticarToken} = require('./middlewares/authMiddleware');
+const { autenticarToken } = require('../middlewares/authMiddleware');
 /**
  * @swagger
  * /api/clientes:
