@@ -46,7 +46,7 @@ app.use('/api/pagos', autenticarToken, pagosRouter); // ← aquí van las rutas 
 
 
 // Rutas de la API
-app.use('/api/clientes', autenticarToken, clientesRoutes);
+app.use('/api/clientes', clientesRoutes);
 app.use('/api/cuentas', autenticarToken, cuentasBancariasRoutes);
 app.use('/api/pagos-detalle', autenticarToken, PagosDetalleRouter);
 app.use('/api/facturas', autenticarToken, facturasRoutes);
