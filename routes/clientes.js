@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const { enviarAuditoria } = require('../models/Auditoria');
+const {autenticarToken} = require('./middlewares/authMiddleware');
 /**
  * @swagger
  * /api/clientes:
@@ -66,7 +67,7 @@ router.get('/', async (req, res) => {
  *                   total_deuda:
  *                     type: number
  */
-router.get('/deudores', async (req, res) => {
+router.get('/deudores', autenticarToken, async (req, res) => {
   try {
     // 1. Obtener todos los clientes
     const clientesRes = await fetch('https://apdis-p5v5.vercel.app/api/clientes');
