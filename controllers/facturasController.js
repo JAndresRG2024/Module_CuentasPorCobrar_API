@@ -17,9 +17,16 @@ exports.getFacturasNoPagadasPorCliente = async (req, res, next) => {
     // Auditoría de consulta de facturas no pagadas
     await enviarAuditoria({
       accion: "SELECT",
+      modulo: "cuentas por cobrar",
       tabla: "facturas",
       id_usuario: req.usuario?.id_usuario || null,
-      details: { tipo: "consulta facturas no pagadas", id_cliente: req.params.id_cliente },
+      details: { 
+        tipo: "consulta facturas no pagadas", 
+        id_cliente: req.params.id_cliente,
+        consulta: `SELECT * FROM facturas WHERE id_cliente = ${req.params.id_cliente} AND estado_factura != 'pagada'`,
+        token: req.headers.authorization ? req.headers.authorization.split(' ')[1] : 'Sin token',
+        usuario_autenticado: req.usuario?.usuario || 'Sin usuario autenticado'
+      },
       nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
 

@@ -205,9 +205,16 @@ const auditarPagoIndividual = async (id, usuario) => {
 
     await enviarAuditoria({
       accion: 'DOWNLOAD_PDF',
+      modulo: 'cuentas por cobrar',
       tabla: 'pagos',
       id_usuario: usuario.id_usuario || null,
-      details: { id_pago: id, tipo: 'descarga PDF individual' },
+      details: { 
+        id_pago: id, 
+        tipo: 'descarga PDF individual',
+        consulta: `SELECT * FROM pagos WHERE id_pago = ${id}`,
+        token: usuario.token || 'Sin token',
+        usuario_autenticado: usuario.usuario || 'Sin usuario autenticado'
+      },
       nombre_rol: usuario.nombre_rol || 'Sistema',
     });
   } catch (err) {
@@ -333,9 +340,15 @@ const auditarDescarga = async (usuario) => {
   try {
     await enviarAuditoria({
       accion: 'DOWNLOAD_PDF',
+      modulo: 'cuentas por cobrar',
       tabla: 'pagos',
       id_usuario: usuario.id_usuario || null,
-      details: { tipo: 'descarga reporte general de pagos' },
+      details: { 
+        tipo: 'descarga reporte general de pagos',
+        consulta: 'SELECT * FROM pagos ORDER BY id_pago',
+        token: usuario.token || 'Sin token',
+        usuario_autenticado: usuario.usuario || 'Sin usuario autenticado'
+      },
       nombre_rol: usuario.nombre_rol || 'Sistema',
     });
   } catch (err) {

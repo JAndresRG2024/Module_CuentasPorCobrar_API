@@ -6,9 +6,15 @@ exports.getAll = async (req, res, next) => {
     const detalles = await PagoDetalle.getAllDetalles();
     await enviarAuditoria({
       accion: "SELECT",
+      modulo: "cuentas por cobrar",
       tabla: "pagos_detalle",
       id_usuario: req.usuario?.id_usuario || null,
-      details: { tipo: "consulta general" },
+      details: { 
+        tipo: "consulta general",
+        consulta: 'SELECT * FROM pagos_detalle ORDER BY id_detalle',
+        token: req.headers.authorization ? req.headers.authorization.split(' ')[1] : 'Sin token',
+        usuario_autenticado: req.usuario?.usuario || 'Sin usuario autenticado'
+      },
       nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json(detalles);
@@ -23,9 +29,16 @@ exports.getById = async (req, res, next) => {
     if (!detalle) return res.status(404).json({ error: 'Detalle de pago no encontrado' });
     await enviarAuditoria({
       accion: "SELECT",
+      modulo: "cuentas por cobrar",
       tabla: "pagos_detalle",
       id_usuario: req.usuario?.id_usuario || null,
-      details: { tipo: "consulta individual", id_detalle: req.params.id },
+      details: { 
+        tipo: "consulta individual", 
+        id_detalle: req.params.id,
+        consulta: `SELECT * FROM pagos_detalle WHERE id_detalle = ${req.params.id}`,
+        token: req.headers.authorization ? req.headers.authorization.split(' ')[1] : 'Sin token',
+        usuario_autenticado: req.usuario?.usuario || 'Sin usuario autenticado',
+      },
       nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json(detalle);
@@ -39,9 +52,15 @@ exports.create = async (req, res, next) => {
     const detalle = await PagoDetalle.createDetalle(req.body);
     await enviarAuditoria({
       accion: "INSERT",
+      modulo: "cuentas por cobrar",
       tabla: "pagos_detalle",
       id_usuario: req.usuario?.id_usuario || null,
-      details: { nuevo_detalle: detalle },
+      details: { 
+        nuevo_detalle: detalle,
+        consulta: 'INSERT INTO pagos_detalle',
+        token: req.headers.authorization ? req.headers.authorization.split(' ')[1] : 'Sin token',
+        usuario_autenticado: req.usuario?.usuario || 'Sin usuario autenticado'
+      },
       nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.status(201).json(detalle);
@@ -56,9 +75,16 @@ exports.update = async (req, res, next) => {
     if (!detalle) return res.status(404).json({ error: 'Detalle de pago no encontrado' });
     await enviarAuditoria({
       accion: "UPDATE",
+      modulo: "cuentas por cobrar",
       tabla: "pagos_detalle",
       id_usuario: req.usuario?.id_usuario || null,
-      details: { id_detalle: req.params.id, cambios: req.body },
+      details: { 
+        id_detalle: req.params.id, 
+        cambios: req.body,
+        consulta: `UPDATE pagos_detalle SET ${Object.keys(req.body).map(key => `${key} = ?`).join(', ')} WHERE id_detalle = ${req.params.id}`,
+        token: req.headers.authorization ? req.headers.authorization.split(' ')[1] : 'Sin token',
+        usuario_autenticado: req.usuario?.usuario || 'Sin usuario autenticado'
+      },
       nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json(detalle);
@@ -76,9 +102,15 @@ exports.delete = async (req, res, next) => {
     }
     await enviarAuditoria({
       accion: "DELETE",
+      modulo: "cuentas por cobrar",
       tabla: "pagos_detalle",
       id_usuario: req.usuario?.id_usuario || null,
-      details: { id_detalle: req.params.id },
+      details: { 
+        id_detalle: req.params.id,
+        consulta: `DELETE FROM pagos_detalle WHERE id_detalle = ${req.params.id}`,
+        token: req.headers.authorization ? req.headers.authorization.split(' ')[1] : 'Sin token',
+        usuario_autenticado: req.usuario?.usuario || 'Sin usuario autenticado'
+      },
       nombre_rol: req.usuario?.nombre_rol || "Sistema",
     });
     res.json({ message: 'Detalle de pago eliminado' });
